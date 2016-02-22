@@ -26,11 +26,7 @@ module.exports = grunt => {
         options: {
           require: [
                 'teoria',
-                'audio-slot',
-                'audio-slot/sources/oscillator',
-                'audio-slot/processors/filter',
-                'audio-slot/params/envelope',
-                'audio-slot/params/lfo'
+                'noteplayer'
               ]
         },
         files: {
@@ -43,7 +39,7 @@ module.exports = grunt => {
         separator: ';',
       },
       dist: {
-        src: ['.tmp/bundle.js', '.tmp/index.js', './src/js/vendor/midi/build/MIDI.js'],
+        src: ['.tmp/bundle.js', '.tmp/index.js'],
         dest: 'dist/static/js/bundle.js',
       },
     },
@@ -61,17 +57,6 @@ module.exports = grunt => {
         compile: {
           expand: true
         }
-      }
-    },
-    copy: {
-      bundle: {
-        files: [{
-          expand: true, 
-          cwd:'src/soundsfonts/FluidR3_GM/', 
-          src: ['**/*.mp3'], 
-          dest: 'dist/static/soundfonts/', 
-          filter: 'isFile'}
-        ]
       }
     },
     connect: {
@@ -97,12 +82,12 @@ module.exports = grunt => {
         tasks: ['jade'],
       },
       js: {
-        files: ['**/*.js'],
+        files: ['src/js/*.js'],
         tasks: ['babel', 'browserify', 'concat']
       }
     },
   });
 
-  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'clean:tmp', 'copy', 'watch']);
+  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'clean:tmp', 'watch']);
   grunt.registerTask('deploy', ['ftp-deploy']);
 };
