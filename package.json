@@ -1,0 +1,36 @@
+{
+  "name": "emergent-music",
+  "version": "0.0.1",
+  "description": "A system that uses simple rules to produce an emergent behaviour and create a song",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "music",
+    "emergent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-stage-1": "^6.5.0",
+    "grunt": "^0.4.5",
+    "grunt-babel": "^6.0.0",
+    "grunt-browserify": "^4.0.1",
+    "grunt-commonjs": "^0.2.0-rc7",
+    "grunt-contrib-clean": "^0.7.0",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-connect": "^0.11.2",
+    "grunt-contrib-copy": "^0.8.2",
+    "grunt-contrib-cssmin": "^0.14.0",
+    "grunt-contrib-jade": "^0.15.0",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-serve": "^0.1.6",
+    "load-grunt-tasks": "^3.4.0"
+  },
+  "dependencies": {
+    "audio-slot": "^4.9.0",
+    "teoria": "^2.2.0"
+  }
+}
