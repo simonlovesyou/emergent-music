@@ -1,98 +1,83 @@
 import teoria from 'teoria';
-
-const lol = () => 'lol';
-
-console.log(lol());
-
-console.log("Hej!");
-
+import np from 'noteplayer';
+const context = new AudioContext();
 
 class Note {
 
   constructor (note, octave, duration, chordwill, placement) {
-    this.note = note;
+    this.note = new teoria.note(note);
+    this.freq = this.note.fq();
     this.octave = octave;
     this.duration = duration; 
     this.chordwill = chordwill;
     this.placement = placement;
   }
 
+  play(duration, start) {
+
+    let n = np.buildFromName(this.note.name().toUpperCase() + this.octave, context);
+    n.setDuration((duration-5)/1000);
+    n.play();
+  }
 }
 
-class Environment {
+class Bar {
+  constructor(notes) {
+    this.notes = notes;
+  }
 
-  constructor(key, scale, numberOfNotes) {
+  play(bpm) {
+    let start = 0;
+    this.notes.forEach((note) => {
+      let duration = this.noteDuration(note.duration, bpm);
 
-    const notesscale = teoria.note(key).scale(scale).simple().map((note) => new Note(note, 0, 0.5, 0.1, 'B4'));
+      setTimeout(() => {
+        note.play(duration, start);
+      }, start);
+      start += duration;
+    });
+  }
 
-    console.log(notesscale);
+  noteDuration(note, bpm) {
+    let whole = 240000/bpm;
+    return whole*note; 
+  }
+}
 
+class Measure {
+  constructor(bars) {
+    this.bars = bars
+  }
+
+  play(bpm) {
+    let start = 0;
+    this.bars.forEach((bar) => {
+      let duration = this.barDuration(bpm);
+
+      setTimeout(() => {
+        bar.play(bpm);
+      }, start);
+      start += duration;
+    })
+  }
+
+  barDuration(bpm) {
+    return 240000/bpm
   }
 
 }
 
-var Slot = require('audio-slot')
+const n = new Note('c4', 4, 0.5); 
+const n3 = new Note('d4', 4, 0.25);
+const n4 = new Note('b4', 3, 0.25);
+const n5 = new Note('g4', 4, 1);
 
-var context = {
-  audio: new AudioContext(),
-  nodes: {
-    oscillator: require('audio-slot/sources/oscillator'),
-    filter: require('audio-slot/processors/filter'),
-    envelope: require('audio-slot/params/envelope'),
-    lfo: require('audio-slot/params/lfo')
-  }
-}
+const b = new Bar([n, n3, n4]);
+const b2 = new Bar([n5]);
+const b3 = new Bar([n4, n, n3]);
 
+const m = new Measure([b, b2, b3]);
 
-
-var synth = Slot(context)
-synth.set({
-  sources: [
-    { 
-      node: 'oscillator', 
-      shape: 'sawtooth', 
-      amp: {
-        node: 'envelope',
-        value: 0.6,
-        attack: 0.1,
-        release: 1
-      },
-      octave: 2,
-      detune: {
-        value: 0,
-        node: 'lfo',
-        amp: 40,
-        rate: 5,
-        mode: 'add'
-      }
-    }
-  ], //awefadfawef
-  processors: [
-    {
-      node: 'filter',
-      type: 'lowpass',
-      frequency: {
-        node: 'envelope',
-        value: 440,
-        decay: 0.9,
-        sustain: 0.5,
-        release: 0.9
-      }
-    }
-  ]
-})
-
-synth.connect(context.audio.destination)
-
-// trigger! serkgn sljkngrsljenrglsjengljs nergljsrh 
-console.log("Trigger!");
-setTimeout(function() {
-  synth.triggerOn(1)
-  synth.triggerOff(2)
-  synth.triggerOn(3)
-  synth.triggerOff(4)
-  synth.triggerOn(5)
-  synth.triggerOff(7)
-}, 0.2)
+m.play(90);
 
 
