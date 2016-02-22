@@ -30,7 +30,7 @@
     "load-grunt-tasks": "^3.4.0"
   },
   "dependencies": {
-    "audio-slot": "^4.9.0",
+    "noteplayer": "^1.1.9",
     "teoria": "^2.2.0"
   }
 }
