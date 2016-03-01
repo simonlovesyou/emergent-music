@@ -1,23 +1,35 @@
 import teoria from 'teoria';
 import np from 'noteplayer';
 const context = new AudioContext();
+import Tock from 'tocktimer';
+import Soundfont from 'soundfont-player';
+const soundFont = new Soundfont(context);
+let piano;
+
 
 class Note {
-
-  constructor (note, octave, duration, chordwill, placement) {
-    this.note = new teoria.note(note);
-    this.freq = this.note.fq();
-    this.octave = octave;
+  constructor (note, duration, chordwill, placement) {
+    if(note !== '') {
+      this.note = new teoria.note(note);
+      this.octave = note.match(/\d/)[0]-3;
+      this.freq = this.note.fq();
+    }
+    
     this.duration = duration; 
-    this.chordwill = chordwill;
+    this.chordwill = chordwill;  
     this.placement = placement;
+  }
+
+  noteDuration(note, bpm) {
+    return 240000/bpm*note; 
   }
 
   play(duration, start) {
 
-    let n = np.buildFromName(this.note.name().toUpperCase() + this.octave, context);
-    n.setDuration((duration-5)/1000);
-    n.play();
+    if(this.note) {
+      piano.play(this.note.name() + this.octave, 0, duration);
+
+    } 
   }
 }
 
@@ -31,20 +43,39 @@ class Bar {
     this.notes.forEach((note) => {
       let duration = this.noteDuration(note.duration, bpm);
 
+      //En timer som kanske fungerar bättre. Återstår att se.
+      /*var timer = new Tock({
+        countdown: true,
+        complete: () => {
+          note.play(duration, start);
+        }
+      });
+
+      timer.start(start);*/
+
       setTimeout(() => {
         note.play(duration, start);
       }, start);
+
       start += duration;
     });
   }
 
+  getTotalDuration() {
+    let duration = 0;
+    this.notes.forEach((note) => {
+      duration += note.duration;
+    });
+    return duration;
+  }
+
   noteDuration(note, bpm) {
-    let whole = 240000/bpm;
-    return whole*note; 
+    return 240000/bpm*note; 
   }
 }
 
-class Measure {
+
+class Section {
   constructor(bars) {
     this.bars = bars
   }
@@ -64,20 +95,133 @@ class Measure {
   barDuration(bpm) {
     return 240000/bpm
   }
-
 }
 
-const n = new Note('c4', 4, 0.5); 
-const n3 = new Note('d4', 4, 0.25);
-const n4 = new Note('b4', 3, 0.25);
-const n5 = new Note('g4', 4, 1);
+
+
+const n = new Note('c4', 0.5); 
+const n3 = new Note('d4', 0.25);
+const n4 = new Note('b4', 0.25);
+const n5 = new Note('g4', 1);
 
 const b = new Bar([n, n3, n4]);
 const b2 = new Bar([n5]);
 const b3 = new Bar([n4, n, n3]);
 
-const m = new Measure([b, b2, b3]);
+const m1 = new Section([b, b2, b3]);
+const m2 = new Section([b2, b, b2]);
 
-m.play(90);
+//m1.play(120);
+//m2.play(120);
+
+var xhr = new XMLHttpRequest();
+xhr.onreadystatechange = function() {
+  if(xhr.readyState === 4 && xhr.status === 200) {
+    var data = xhr.responseText;
+
+    data = data.split('\n');
+
+    data = data.map(function(d) { return d.split(' ')});
+
+    data = data.map(function(d) { return {action: d[0], note: d[1], time: d[2]}});
+
+    let section = [[]];    //section innerhåller bars.
+
+    console.log(data);
+
+    var duration = 0;
+    let noteNumber = 0;
+
+    for(var i = 0; i < data.length; i++) {
+      //console.log(duration);
+
+      if(data[i].action === 'ON') {
+        console.log("ON!");
+        let start = parseFloat(data[i].time);
+        //Förutsätter att varannan är av.
+        let stop = parseFloat(data[i+1].time);
+        duration += Math.abs((stop-start));
+        console.log("duration: "+ duration);
+
+        if(duration <= 1) {
+          console.log("Not placeras i bar nummer %s, duration: %s", section.length-1, duration);
+          section[section.length-1].push(new Note(data[i].note, Math.abs(stop-start)));
+        } else {
+          section.push([]);
+          duration = 0;
+        }
+      } else if(data[i].action === 'OFF' && i !== data.length-1) {
+        console.log("OFF!");
+        let start = parseFloat(data[i].time);
+        //Förutsätter att varannan är av.
+        let stop = parseFloat(data[i+1].time);
+        duration += Math.abs((start-stop));
+
+        if(duration <= 1) {
+          console.log("Paus placeras i bar nummer %s, duration: %s", section.length-1, duration);
+          section[section.length-1].push(new Note('', Math.abs(start-stop)));
+        } else {
+          section.push([]);
+          duration = 0;
+        }
+      }
+    }
+    
+
+    
+    section = new Section(section.map(function(s) {
+      return new Bar(s.map(function(n) {
+        return n;
+      }));
+    }));
+
+    section.bars.forEach(bar => {
+      console.log(bar.getTotalDuration());
+    })
+
+    piano = soundFont.instrument('kalimba');
+
+    piano.onready(() => {
+      section.play(105*2);
+      console.log("PLAY!");
+
+    });
+
+  }
+} 
+
+function doTimer(length, resolution, oninstance, oncomplete)
+{
+    var steps = (length / 100) * (resolution / 10),
+        speed = length / steps,
+        count = 0,
+        start = new Date().getTime();
+
+    function instance()
+    {
+        if(count++ == steps)
+        {
+            oncomplete(steps, count);
+        }
+        else
+        {
+            oninstance(steps, count);
+
+            var diff = (new Date().getTime() - start) - (count * speed);
+            window.setTimeout(instance, (speed - diff));
+        }
+    }
+
+    window.setTimeout(instance, speed);
+}
+
+
+
+
+
+
+xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
+xhr.send();
+
 
 
