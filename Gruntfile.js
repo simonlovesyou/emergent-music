@@ -12,21 +12,35 @@ module.exports = grunt => {
         options: {
           sourceMap: true
         },
-        files: {
-          '.tmp/index.js': 'src/js/index.js'
-        }
+        files: [
+        {
+          expand: true, 
+          cwd:'./src/js/', 
+          src: ['*.js'], 
+          dest: './.tmp/',
+        }]
       }
     },
     clean: {
       public: ["dist/"],
       tmp: [".tmp/"]
     },
+    copy: {
+      main: {
+        expand: true,
+        cwd: 'src/assets/txt/',
+        src: '**.txt',
+        dest: 'dist/assets/txt/',
+      },
+    },
     browserify: {
       bundle: {
         options: {
           require: [
                 'teoria',
-                'noteplayer'
+                'noteplayer',
+                'soundfont-player',
+                'tocktimer'
               ]
         },
         files: {
@@ -88,6 +102,6 @@ module.exports = grunt => {
     },
   });
 
-  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'clean:tmp', 'watch']);
+  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'clean:tmp', 'copy', 'watch']);
   grunt.registerTask('deploy', ['ftp-deploy']);
 };
