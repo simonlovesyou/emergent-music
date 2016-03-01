@@ -27,10 +27,13 @@
     "grunt-contrib-jade": "^0.15.0",
     "grunt-contrib-watch": "^0.6.1",
     "grunt-serve": "^0.1.6",
-    "load-grunt-tasks": "^3.4.0"
+    "load-grunt-tasks": "^3.4.0",
+    "tocktimer": "^1.0.7"
   },
   "dependencies": {
+    "midi-node": "^0.1.13",
     "noteplayer": "^1.1.9",
+    "soundfont-player": "^0.6.1",
     "teoria": "^2.2.0"
   }
 }
