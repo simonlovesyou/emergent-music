@@ -1,10 +1,10 @@
 import teoria from 'teoria';
 import np from 'noteplayer';
-const context = new AudioContext();
 import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
 import MarkovChain from 'markovchain-generate'; 
 const soundFont = new Soundfont(context);
+const context = new AudioContext();
 let piano;
 
 
@@ -28,17 +28,8 @@ class Note {
 
   play(duration, start) {
 
-    /*if(this.note) {
-
-      let n = np.buildFromName(this.note.name().toUpperCase() + this.octave, context);
-      n.setDuration((duration)/1000);
-      n.play();
-
-    }*/
-
     if(this.note) {
       piano.play(this.note.name() + this.octave, 0, duration);
-
     }
   }
 }
@@ -53,17 +44,8 @@ class Bar {
   play(bpm) {
     let start = 0;
     this.notes.forEach((note) => {
+
       let duration = this.noteDuration(note.duration, bpm);
-
-      //En timer som kanske fungerar bättre. Återstår att se.
-      /*var timer = new Tock({
-        countdown: true,
-        complete: () => {
-          note.play(duration, start);
-        }
-      });
-
-      timer.start(start);*/
 
       setTimeout(() => {
         note.play(duration, start);
@@ -110,7 +92,7 @@ class Section {
   }
 }
 
-
+//Visar hur vi annars skapar notes, bars och sections.
 
 /*const n = new Note('c4', 0.5); 
 const n3 = new Note('d4', 0.25);
@@ -128,156 +110,80 @@ const m2 = new Section([b2, b, b2]);
 //m2.play(120);
 
 var xhr = new XMLHttpRequest();
+xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
+xhr.send();
 xhr.onreadystatechange = function() {
   if(xhr.readyState === 4 && xhr.status === 200) {
     var data = xhr.responseText;
 
-    data = data.split('\n');
+    data = data.split('\n').map(d => d.split(' '));
 
-    data = data.map(function(d) { return d.split(' ')});
+    data = data.map(d => ({action: d[0], note: d[1], time: d[2]}));
 
-    data = data.map(function(d) { return {action: d[0], note: d[1], time: d[2]}});
+    let section = [[]];    
 
-    let section = [[]];    //section innerhåller bars.
+    let duration = 0;
 
-    //console.log(data);
-
-    var duration = 0;
-    let noteNumber = 0;
-
-    for(var i = 0; i < data.length; i++) {
-      //console.log(duration);
-
+    for(let i = 0; i < data.length; i++) {
       if(data[i].action === 'ON') {
-        //console.log("ON!");
         let start = parseFloat(data[i].time);
-        //Förutsätter att varannan är av.
+        //Assumes that every other note is off
         let stop = parseFloat(data[i+1].time);
         duration += Math.abs((start-stop));
-        //console.log("duration: "+ duration);
 
         if(duration <= 1) {
-          //console.log("Not placeras i bar nummer %s, duration: %s", section.length-1, duration);
           section[section.length-1].push(new Note(data[i].note, Math.abs(start-stop)));
         } else {
           section.push([]);
           duration = 0;
         }
-      } /*else if(data[i].action === 'OFF' && i !== data.length-1) {
-        console.log("OFF!");
-        let start = parseFloat(data[i].time);
-        //Förutsätter att varannan är av.
-        let stop = parseFloat(data[i+1].time);
-        duration += Math.abs((start-stop));
-
-        if(duration <= 1) {
-          console.log("Paus placeras i bar nummer %s, duration: %s", section.length-1, duration);
-          section[section.length-1].push(new Note('', Math.abs(start-stop)));
-        } else {
-          section.push([]);
-          duration = 0;
-        }
-      }*/
+      } 
     }
     
     let notes = [];
-    
-    section = new Section(section.map(function(s) {
-      return new Bar(s.map(function(n) {
-        return n;
-      }));
-    }));
 
-    section.bars.forEach(bar => {
-      notes.push(...bar.notes);
-      //console.log(bar.getTotalDuration());
-    });
 
-    //console.log(notes);
-    let merged = ""; 
+    //Create bars out of all notes into the section array
+    section = new Section(
+      section.map(s => 
+        new Bar(s.map(n => n))
+      ));
 
-    notes.forEach((note)=>{
-      merged += note.duration + "-" + note.note.name() + note.octave + " "; 
-      console.log(note.note.name());
-    });
+    //Push all notes from all bars to notes array
+    section.bars.forEach(bar => notes.push(...bar.notes));
+
+    //Merge all notes to sentences
+    let merged = notes.map(n => n.duration + "-" + n.note.name() + n.octave)
+                 .join(' ');
 
     let chain = new MarkovChain(); 
-
     chain.generateChain(merged); 
-    var probabilities = chain.dump();
 
-    //console.log(merged);
-    console.log(JSON.parse(probabilities));
+    //Markov probabilites for all notes
+    const probabilities = JSON.parse(chain.dump());
 
-
-
+    //Load instrument as a soundfount
     piano = soundFont.instrument('kalimba');
 
+    //When instrument is ready
     piano.onready(() => {
-      //section.play(105*2);
 
       let start = 0;
+      //Iterate through all notes
       notes.forEach((note) => {
-        let duration = noteDuration(note.duration, 100);
-        
-        setTimeout(() => {
-          
-          note.play(duration, start);  
-          
-        }, start);
-
-/*        var timer = new Tock({
-          countdown: true,
-          complete: () => {
-            note.play(duration, start);
-          }
-        });
-
-        timer.start(start);*/
+        //Duration for current note
+        let duration = noteDuration(note.duration, 100);  //note measure, bpm
+        //Play the note after a certain amount of time
+        setTimeout(() => note.play(duration, start), start);
 
         start += duration;
+
       });
-
-      console.log("PLAY!");
-
     });
 
   }
-} 
+}
 
 function noteDuration(note, bpm) {
   return 240000/bpm*note; 
 }
-
-function doTimer(length, resolution, oninstance, oncomplete)
-{
-    var steps = (length / 100) * (resolution / 10),
-        speed = length / steps,
-        count = 0,
-        start = new Date().getTime();
-
-    function instance()
-    {
-        if(count++ == steps)
-        {
-            oncomplete(steps, count);
-        }
-        else
-        {
-            oninstance(steps, count);
-
-            var diff = (new Date().getTime() - start) - (count * speed);
-            window.setTimeout(instance, (speed - diff));
-        }
-    }
-
-    window.setTimeout(instance, speed);
-}
-
-
-
-
-
-
-xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
-xhr.send();
