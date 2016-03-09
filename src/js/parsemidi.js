@@ -65,9 +65,9 @@ midi.Sequence.fromFile(path.join(process.cwd(), '/src/supermario.mid'), (err, se
       console.log(event.message);
 
       if(event.message.getCommand().match(/(ON|OFF)/)[0] === 'ON') {
-        notes.push(['ON', hexToMidi[event.message.getData()[0]], 1/(Math.pow(2, 7) / event.delta)]);
+        notes.push(['ON', hexToMidi[event.message.getData()[0]], 1/(Math.pow(2, 8) / event.delta)]);
       } else {
-        notes.push(['OFF', hexToMidi[event.message.getData()[0]], 1/(Math.pow(2, 7) / event.delta)]);
+        notes.push(['OFF', hexToMidi[event.message.getData()[0]], 1/(Math.pow(2, 8) / event.delta)]);
       }
 
     }

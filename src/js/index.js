@@ -3,10 +3,12 @@ import np from 'noteplayer';
 const context = new AudioContext();
 import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
+import MarkovChain from 'markovchain-generate'; 
 const soundFont = new Soundfont(context);
 let piano;
 
 
+/*Class note. A note contains a note, frequency, the duration of the note, chordwill and placement.*/
 class Note {
   constructor (note, duration, chordwill, placement) {
     if(note !== '') {
@@ -26,18 +28,28 @@ class Note {
 
   play(duration, start) {
 
+    /*if(this.note) {
+
+      let n = np.buildFromName(this.note.name().toUpperCase() + this.octave, context);
+      n.setDuration((duration)/1000);
+      n.play();
+
+    }*/
+
     if(this.note) {
       piano.play(this.note.name() + this.octave, 0, duration);
 
-    } 
+    }
   }
 }
 
+/*A bar contains a set of notes.*/
 class Bar {
   constructor(notes) {
     this.notes = notes;
   }
 
+  /*Plays a bar containing a set of different notes*/
   play(bpm) {
     let start = 0;
     this.notes.forEach((note) => {
@@ -61,6 +73,7 @@ class Bar {
     });
   }
 
+  /*Returns the total duration all the notes*/
   getTotalDuration() {
     let duration = 0;
     this.notes.forEach((note) => {
@@ -99,7 +112,7 @@ class Section {
 
 
 
-const n = new Note('c4', 0.5); 
+/*const n = new Note('c4', 0.5); 
 const n3 = new Note('d4', 0.25);
 const n4 = new Note('b4', 0.25);
 const n5 = new Note('g4', 1);
@@ -110,7 +123,7 @@ const b3 = new Bar([n4, n, n3]);
 
 const m1 = new Section([b, b2, b3]);
 const m2 = new Section([b2, b, b2]);
-
+*/
 //m1.play(120);
 //m2.play(120);
 
@@ -127,7 +140,7 @@ xhr.onreadystatechange = function() {
 
     let section = [[]];    //section innerhåller bars.
 
-    console.log(data);
+    //console.log(data);
 
     var duration = 0;
     let noteNumber = 0;
@@ -136,21 +149,21 @@ xhr.onreadystatechange = function() {
       //console.log(duration);
 
       if(data[i].action === 'ON') {
-        console.log("ON!");
+        //console.log("ON!");
         let start = parseFloat(data[i].time);
         //Förutsätter att varannan är av.
         let stop = parseFloat(data[i+1].time);
-        duration += Math.abs((stop-start));
-        console.log("duration: "+ duration);
+        duration += Math.abs((start-stop));
+        //console.log("duration: "+ duration);
 
         if(duration <= 1) {
-          console.log("Not placeras i bar nummer %s, duration: %s", section.length-1, duration);
-          section[section.length-1].push(new Note(data[i].note, Math.abs(stop-start)));
+          //console.log("Not placeras i bar nummer %s, duration: %s", section.length-1, duration);
+          section[section.length-1].push(new Note(data[i].note, Math.abs(start-stop)));
         } else {
           section.push([]);
           duration = 0;
         }
-      } else if(data[i].action === 'OFF' && i !== data.length-1) {
+      } /*else if(data[i].action === 'OFF' && i !== data.length-1) {
         console.log("OFF!");
         let start = parseFloat(data[i].time);
         //Förutsätter att varannan är av.
@@ -164,10 +177,10 @@ xhr.onreadystatechange = function() {
           section.push([]);
           duration = 0;
         }
-      }
+      }*/
     }
     
-
+    let notes = [];
     
     section = new Section(section.map(function(s) {
       return new Bar(s.map(function(n) {
@@ -176,19 +189,65 @@ xhr.onreadystatechange = function() {
     }));
 
     section.bars.forEach(bar => {
-      console.log(bar.getTotalDuration());
-    })
+      notes.push(...bar.notes);
+      //console.log(bar.getTotalDuration());
+    });
+
+    //console.log(notes);
+    let merged = ""; 
+
+    notes.forEach((note)=>{
+      merged += note.duration + "-" + note.note.name() + note.octave + " "; 
+      console.log(note.note.name());
+    });
+
+    let chain = new MarkovChain(); 
+
+    chain.generateChain(merged); 
+    var probabilities = chain.dump();
+
+    //console.log(merged);
+    console.log(JSON.parse(probabilities));
+
+
 
     piano = soundFont.instrument('kalimba');
 
     piano.onready(() => {
-      section.play(105*2);
+      //section.play(105*2);
+
+      let start = 0;
+      notes.forEach((note) => {
+        let duration = noteDuration(note.duration, 100);
+        
+        setTimeout(() => {
+          
+          note.play(duration, start);  
+          
+        }, start);
+
+/*        var timer = new Tock({
+          countdown: true,
+          complete: () => {
+            note.play(duration, start);
+          }
+        });
+
+        timer.start(start);*/
+
+        start += duration;
+      });
+
       console.log("PLAY!");
 
     });
 
   }
 } 
+
+function noteDuration(note, bpm) {
+  return 240000/bpm*note; 
+}
 
 function doTimer(length, resolution, oninstance, oncomplete)
 {
@@ -222,6 +281,3 @@ function doTimer(length, resolution, oninstance, oncomplete)
 
 xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
 xhr.send();
-
-
-

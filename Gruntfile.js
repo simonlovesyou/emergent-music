@@ -40,7 +40,8 @@ module.exports = grunt => {
                 'teoria',
                 'noteplayer',
                 'soundfont-player',
-                'tocktimer'
+                'tocktimer', 
+                'markovchain-generate'
               ]
         },
         files: {
