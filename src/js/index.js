@@ -3,8 +3,8 @@ import np from 'noteplayer';
 import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
 import MarkovChain from 'markovchain-generate'; 
-const soundFont = new Soundfont(context);
 const context = new AudioContext();
+const soundFont = new Soundfont(context);
 let piano;
 
 
@@ -174,6 +174,7 @@ xhr.onreadystatechange = function() {
         //Duration for current note
         let duration = noteDuration(note.duration, 100);  //note measure, bpm
         //Play the note after a certain amount of time
+        console.log(note.duration + note.note.name());
         setTimeout(() => note.play(duration, start), start);
 
         start += duration;
