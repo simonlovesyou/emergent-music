@@ -32,6 +32,12 @@ module.exports = grunt => {
         src: '**.txt',
         dest: 'dist/assets/txt/',
       },
+      css: {
+        expand:true,
+        cwd: 'src/css/',
+        src: '**.css',
+        dest: 'dist/assets/css/',
+      }
     },
     browserify: {
       bundle: {

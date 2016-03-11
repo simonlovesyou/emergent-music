@@ -34,6 +34,7 @@
     "markovchain-generate": "^1.0.11",
     "midi-node": "^0.1.13",
     "noteplayer": "^1.1.9",
+    "shuffle-array": "^0.1.2",
     "soundfont-player": "^0.6.1",
     "teoria": "^2.2.0"
   }
