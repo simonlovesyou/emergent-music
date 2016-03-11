@@ -65,8 +65,12 @@ class Note {
           //console.log(note.note.name() +"s position is " +note.position);
           if((currentPos + 1) === note.position) {
             newPosition = currentPos
-          } else {
+          } else if(note.position < currentPos) {
             newPosition = note.position;
+          } else if(note.position > currentPos) {
+            //console.log("Hej :)");
+            newPosition = note.position-1;
+            //console.log("I want to position myself at " + (note.position-1));
           }
           
           return true;
@@ -76,30 +80,32 @@ class Note {
 
 
     if(newPosition !== currentPos) {
-      song.forEach((n, i) => {
-        if(i >= newPosition && i < currentPos) {
+      song.forEach(n => {
+        //Push all notes backwards from the favourite notes position to this notes position
+        if(n.position >= newPosition && n.position < currentPos) {
+          //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position+1, currentPos);
           n.givePosition(n.position+1);
+        }
+
+        //Push all notes forward from the favourite notes position to this notes position
+        console.log("%s %s %s", n.position, newPosition, currentPos);
+        if(n.position <= newPosition && n.position > currentPos) {
+          //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position, currentPos);
+          n.givePosition(n.position-1);
         }
       });
     }
 
-
-
-
-    /*song.forEach(n => {
-      if(n.position === newPosition) {
-        console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position, currentPos);
-        n.givePosition(currentPos);
-      }
-    });*/
-
-    //console.log(currentPos, newPosition);
+    console.log(currentPos, newPosition);
+    console.log('\n');
 
     if(currentPos !== newPosition) {
       numberOfMoves++;
     }
 
     this.position = newPosition;
+
+
 
   }
 
@@ -261,27 +267,27 @@ xhr.onreadystatechange = function() {
     /*song = [];
 
     c = new Note('c4', 1/4);
-    c.giveRules([new Note('d4', 1/4)]);
+    c.giveRules([new Note('e4', 1/4)]);
 
     d = new Note('d4', 1/4);
-    d.giveRules([new Note('e4', 1/4)/*, new Note('f4', 1/4), new Note('g4', 1/4)]);
+    d.giveRules([new Note('f#4', 1/4)]);
 
     e = new Note('e4', 1/4);
-    e.giveRules([new Note('f4', 1/4)/*, new Note('g4', 1/4), new Note('a4', 1/4)]);
+    e.giveRules([new Note('f4', 1/4)]);
 
     f = new Note('f4', 1/4);
-    f.giveRules([new Note('g4', 1/4)/*, new Note('a4', 1/4), new Note('b4', 1/4)]);
+    f.giveRules([new Note('g4', 1/4)]);
 
     g = new Note('g4', 1/4);
-    g.giveRules([new Note('a4', 1/4)/*, new Note('b4', 1/4), new Note('c4', 1/4)]);
+    g.giveRules([new Note('a4', 1/4)]);
 
     a = new Note('a4', 1/4);
-    a.giveRules([new Note('b4', 1/4)/*, new Note('c4', 1/4), new Note('d4', 1/4)]);
+    a.giveRules([new Note('b4', 1/4)]);
 
     b = new Note('b4', 1/4);
-    b.giveRules([new Note('c4', 1/4)/*, new Note('d4', 1/4), new Note('e4', 1/4)]);
+    b.giveRules([new Note('c4', 1/4)]);
 
-    song = [a,b,d,c,e,f,g];
+    song = [a,b,c,d,e,f,g];
 
     //shuffle(song);
 
@@ -289,13 +295,13 @@ xhr.onreadystatechange = function() {
 
     song.forEach((n, i) => {
       n.givePosition(i);
-      n.giveVision(1);
+      n.giveVision(2);
       console.log(n.note.name() + " " + n.position);
-    });
+    });*/
 
-    console.log("Start");*/
+    console.log("Start");
 
-    iterate(505, function(iteration) {
+    iterate(10, function(iteration) {
       song.forEach(n => {
         setFieldOfView(n);
         n.move();
@@ -306,11 +312,9 @@ xhr.onreadystatechange = function() {
     });
 
 
-
-
     song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
 
-    console.log(song);
+    console.log(song.map(n => n.note.name() + n.position).join(' '));
 
     //Load instrument as a soundfount
     piano = soundFont.instrument('acoustic_grand_piano');
@@ -344,12 +348,12 @@ function setFieldOfView(n) {
   let vision = n.vision;
   let pos = n.position;
 
-  //console.log("Vision: " + vision);
-  //console.log("Position: " + pos);
+  console.log("Vision: " + vision);
+  console.log("Position: " + pos);
 
   fieldOfView = song.filter(f => {
     if(f.position >= (pos-vision) && f.position <= (pos+vision) && f.position !== pos) {
-      //console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
+      console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
       return true;
     } else return false;
   });
