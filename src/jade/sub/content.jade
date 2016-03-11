@@ -3,5 +3,8 @@ extends ../layout.jade
 
 block content
 	h1 Play that sweet music.
-	
-	button.iterate(style="height:50px;width:100px;", onclick="loop()") On
+
+	input(type="text", id="NoOfIterations" name="NoOfIterations")
+	button(type="button" onclick="iteration();") Iterate
+
+	button(id="play" onclick="play();") Play

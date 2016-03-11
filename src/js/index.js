@@ -198,18 +198,9 @@ const m2 = new Section([b2, b, b2]);
 var xhr = new XMLHttpRequest();
 xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.iterate')[0].innerHTML = 'Loading...';
-})
-
-
 xhr.send();
 xhr.onreadystatechange = function() {
   if(xhr.readyState === 4 && xhr.status === 200) {
-
-    console.log({data: document.querySelectorAll('.iterate')[0]});
-
-    
 
     var data = xhr.responseText;
 
@@ -241,9 +232,8 @@ xhr.onreadystatechange = function() {
     section = new Section(
       section.map(s => 
         new Bar(s.map(n => n))
-      ));
-
-    console.log(song);
+      )
+    );
 
     //Push all notes from all bars to notes array
     section.bars.forEach(bar => song.push(...bar.notes));
@@ -251,6 +241,10 @@ xhr.onreadystatechange = function() {
     /*song.forEach((n) => {
       console.log(n.duration);
     });*/
+
+    console.log(song.length);
+
+    song = song.filter(n => n.note);
 
     //Merge all notes to sentences
     let merged = song.filter(n => n.duration > 0)
@@ -313,50 +307,71 @@ xhr.onreadystatechange = function() {
       console.log(n.note.name() + " " + n.position);
     });*/
 
-    let graphData = [];
 
-    console.log("Start");
-
-    iterate(500, function(iteration) {
-      song.forEach(n => {
-        setFieldOfView(n);
-        n.move();
-      });
-      song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
-      graphData.push({iteration, numberOfMoves});
-
-      numberOfMoves = 0;
-    });
-
-    window.graph(graphData);
-
+    console.log(song);
 
     song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
 
     console.log(song.map(n => n.note.name() + n.position).join(' '));
 
     //Load instrument as a soundfount
-    piano = soundFont.instrument('acoustic_grand_piano');
-
-    //When instrument is ready
+    piano = soundFont.instrument('gunshot');
+    document.querySelector('#play').innerHTML = 'Loading...';
+    document.querySelector('#play').disabled = true;
     piano.onready(() => {
-
-      let start = 0;
-      //Iterate through all notes
-      song.forEach((note) => {
-
-        //Duration for current note
-        let duration = noteDuration(note.duration, 80);  //note measure, bpm
-        //Play the note after a certain amount of time
-        //console.log(note.duration + note.note.name());
-        setTimeout(() => note.play(duration, start), start);
-
-        start += duration;
-
-      });
+      document.querySelector('#play').innerHTML = 'Play';
+      document.querySelector('#play').disabled = false;
     });
 
   }
+}
+
+function iteration() {
+
+  let iterations = document.querySelector('#NoOfIterations').value || 100;
+
+  let graphData = [];
+
+  iterate(iterations, function(iteration) {
+    song.forEach(n => {
+      setFieldOfView(n);
+      n.move();
+    });
+    song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
+    graphData.push({iteration, numberOfMoves});
+
+    numberOfMoves = 0;
+  });
+
+  
+
+  console.log("Start");
+
+  window.graph(graphData);
+
+}
+
+let playing = false;
+
+function play() {
+
+  let start = 0;
+  //Iterate through all notes
+  song.forEach((note) => {
+
+    //Duration for current note
+    let duration = noteDuration(note.duration, 650);  //note measure, bpm
+    //Play the note after a certain amount of time
+    //console.log(note.duration + note.note.name());
+
+    setTimeout(() => note.play(duration, start), start);
+    
+    
+
+    start += duration;
+
+  });
+
 }
 
 function iterate(numberOfTimes, cb) {
