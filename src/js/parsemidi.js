@@ -42,7 +42,7 @@ console.log(midi.Track);
 
 let notes = [];
 
-midi.Sequence.fromFile(path.join(process.cwd(), '/src/supermario.mid'), (err, sequence) => {
+midi.Sequence.fromFile(path.join(process.cwd(), '/src/for_elise.mid'), (err, sequence) => {
   if(err) {
     console.log(err);
   }
@@ -51,7 +51,7 @@ midi.Sequence.fromFile(path.join(process.cwd(), '/src/supermario.mid'), (err, se
 
   console.log(sequence.getTracks()[0].events);
 
-  sequence.getTracks()[0].events.forEach((event) => {
+  sequence.getTracks()[1].events.forEach((event) => {
     //console.log(event.message.getCommand());
     if(event.message.getCommand() === 'META_MESSAGE') {
       console.log(event.message);
