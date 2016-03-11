@@ -31,6 +31,7 @@
     "tocktimer": "^1.0.7"
   },
   "dependencies": {
+    "d3": "^3.5.16",
     "markovchain-generate": "^1.0.11",
     "midi-node": "^0.1.13",
     "noteplayer": "^1.1.9",

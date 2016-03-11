@@ -48,11 +48,12 @@ module.exports = grunt => {
                 'soundfont-player',
                 'tocktimer', 
                 'markovchain-generate',
-                'shuffle-array'
+                'shuffle-array',
+                'd3'
               ]
         },
         files: {
-          '.tmp/bundle.js': ['./tmp/index.js']
+          '.tmp/bundle.js': ['./.tmp/graph.js']
         }
       }
     },
@@ -110,6 +111,6 @@ module.exports = grunt => {
     },
   });
 
-  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'clean:tmp', 'copy', 'watch']);
+  grunt.registerTask('default', ['clean:public', 'babel', 'browserify', 'jade', 'concat', 'copy', 'clean:tmp', 'watch']);
   grunt.registerTask('deploy', ['ftp-deploy']);
 };

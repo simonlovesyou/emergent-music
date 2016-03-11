@@ -80,24 +80,27 @@ class Note {
 
 
     if(newPosition !== currentPos) {
-      song.forEach(n => {
+      song.some(n => {
         //Push all notes backwards from the favourite notes position to this notes position
         if(n.position >= newPosition && n.position < currentPos) {
           //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position+1, currentPos);
           n.givePosition(n.position+1);
+          return true;
         }
 
         //Push all notes forward from the favourite notes position to this notes position
-        console.log("%s %s %s", n.position, newPosition, currentPos);
+        //console.log("%s %s %s", n.position, newPosition, currentPos);
         if(n.position <= newPosition && n.position > currentPos) {
           //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position, currentPos);
           n.givePosition(n.position-1);
+          return true;
         }
+        return false;
       });
     }
 
-    console.log(currentPos, newPosition);
-    console.log('\n');
+    //console.log(currentPos, newPosition);
+    //console.log('\n');
 
     if(currentPos !== newPosition) {
       numberOfMoves++;
@@ -194,9 +197,20 @@ const m2 = new Section([b2, b, b2]);
 
 var xhr = new XMLHttpRequest();
 xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.iterate')[0].innerHTML = 'Loading...';
+})
+
+
 xhr.send();
 xhr.onreadystatechange = function() {
   if(xhr.readyState === 4 && xhr.status === 200) {
+
+    console.log({data: document.querySelectorAll('.iterate')[0]});
+
+    
+
     var data = xhr.responseText;
 
     data = data.split('\n').map(d => d.split(' '));
@@ -299,17 +313,22 @@ xhr.onreadystatechange = function() {
       console.log(n.note.name() + " " + n.position);
     });*/
 
+    let graphData = [];
+
     console.log("Start");
 
-    iterate(10, function(iteration) {
+    iterate(500, function(iteration) {
       song.forEach(n => {
         setFieldOfView(n);
         n.move();
       });
       song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
-      console.log(numberOfMoves);
+      graphData.push({iteration, numberOfMoves});
+
       numberOfMoves = 0;
     });
+
+    window.graph(graphData);
 
 
     song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
@@ -325,10 +344,11 @@ xhr.onreadystatechange = function() {
       let start = 0;
       //Iterate through all notes
       song.forEach((note) => {
+
         //Duration for current note
         let duration = noteDuration(note.duration, 80);  //note measure, bpm
         //Play the note after a certain amount of time
-        console.log(note.duration + note.note.name());
+        //console.log(note.duration + note.note.name());
         setTimeout(() => note.play(duration, start), start);
 
         start += duration;
@@ -349,12 +369,12 @@ function setFieldOfView(n) {
   let vision = n.vision;
   let pos = n.position;
 
-  console.log("Vision: " + vision);
-  console.log("Position: " + pos);
+  //console.log("Vision: " + vision);
+  //console.log("Position: " + pos);
 
-  fieldOfView = song.filter(f => {
+  let fieldOfView = song.filter(f => {
     if(f.position >= (pos-vision) && f.position <= (pos+vision) && f.position !== pos) {
-      console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
+      //console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
       return true;
     } else return false;
   });
