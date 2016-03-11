@@ -6,3 +6,9 @@ block content
 	
 	button.iterate(style="height:50px;width:100px;", onclick="loop()")
 		p On
+
+	
+	h3 How many times do you want to run? 
+	form(name="login", action="/", method="post")
+		input(type="text", id="NoOfIterations" name="NoOfIterations")
+		button(type="button" name='' onclick="iterate('NoOfIterations');") Iterate

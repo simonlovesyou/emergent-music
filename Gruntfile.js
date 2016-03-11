@@ -47,7 +47,8 @@ module.exports = grunt => {
                 'noteplayer',
                 'soundfont-player',
                 'tocktimer', 
-                'markovchain-generate'
+                'markovchain-generate', 
+                'shuffle-array'
               ]
         },
         files: {
