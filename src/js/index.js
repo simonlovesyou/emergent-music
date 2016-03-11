@@ -3,9 +3,12 @@ import np from 'noteplayer';
 import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
 import MarkovChain from 'markovchain-generate'; 
-const soundFont = new Soundfont(context);
+import shuffle from 'shuffle-array';
 const context = new AudioContext();
+const soundFont = new Soundfont(context);
 let piano;
+let song = [];
+let numberOfMoves = 0;
 
 
 /*Class note. A note contains a note, frequency, the duration of the note, chordwill and placement.*/
@@ -16,14 +19,88 @@ class Note {
       this.octave = note.match(/\d/)[0]-3;
       this.freq = this.note.fq();
     }
-    
+    this.rules;
     this.duration = duration; 
     this.chordwill = chordwill;  
-    this.placement = placement;
+    this.position = placement;
+    this.fieldOfView = [];
+    this.lastPosition = this.position;
   }
 
   noteDuration(note, bpm) {
     return 240000/bpm*note; 
+  }
+
+  giveVision(length) {
+    this.vision = length;
+  }
+
+  giveNotesInVision(notesInVision) {
+    this.fieldOfView = notesInVision;
+  }
+
+  givePosition(pos) {
+    this.position = pos;
+  }
+
+  giveRules(rules) {
+    this.rules = rules;
+  }
+
+  move() {
+    let currentPos = this.position;
+    this.lastPosition = currentPos;
+
+    let newPosition = currentPos;
+
+    //console.log("I, %s,  can see these notes:", this.note.name());
+    //console.log(this.fieldOfView.map(n => n.note.name() + " " + n.position).join(' '));
+
+    this.rules.some(rule => {
+      return this.fieldOfView.some(note => {
+
+
+        if(rule.note.name() === note.note.name() && rule.duration === note.duration) {
+          //console.log(this.note.name() +": " + note.note.name() + " is my favourite");
+          //console.log(note.note.name() +"s position is " +note.position);
+          if((currentPos + 1) === note.position) {
+            newPosition = currentPos
+          } else {
+            newPosition = note.position;
+          }
+          
+          return true;
+        } else return false;
+      });
+    });
+
+
+    if(newPosition !== currentPos) {
+      song.forEach((n, i) => {
+        if(i >= newPosition && i < currentPos) {
+          n.givePosition(n.position+1);
+        }
+      });
+    }
+
+
+
+
+    /*song.forEach(n => {
+      if(n.position === newPosition) {
+        console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position, currentPos);
+        n.givePosition(currentPos);
+      }
+    });*/
+
+    //console.log(currentPos, newPosition);
+
+    if(currentPos !== newPosition) {
+      numberOfMoves++;
+    }
+
+    this.position = newPosition;
+
   }
 
   play(duration, start) {
@@ -139,9 +216,6 @@ xhr.onreadystatechange = function() {
         }
       } 
     }
-    
-    let notes = [];
-
 
     //Create bars out of all notes into the section array
     section = new Section(
@@ -149,12 +223,21 @@ xhr.onreadystatechange = function() {
         new Bar(s.map(n => n))
       ));
 
+    console.log(song);
+
     //Push all notes from all bars to notes array
-    section.bars.forEach(bar => notes.push(...bar.notes));
+    section.bars.forEach(bar => song.push(...bar.notes));
+
+    /*song.forEach((n) => {
+      console.log(n.duration);
+    });*/
 
     //Merge all notes to sentences
-    let merged = notes.map(n => n.duration + "-" + n.note.name() + n.octave)
+    let merged = song.filter(n => n.duration > 0)
+                 .map(n => n.duration + "-" + n.note.name() + n.octave)
                  .join(' ');
+
+    merged = merged.replace(/\./g, 'q');
 
     let chain = new MarkovChain(); 
     chain.generateChain(merged); 
@@ -162,17 +245,84 @@ xhr.onreadystatechange = function() {
     //Markov probabilites for all notes
     const probabilities = JSON.parse(chain.dump());
 
+    //Give the rules for all notes
+    song.forEach(n => setNoteRules(probabilities, n));
+
+    song = song.filter(n => n.duration > 0);
+
+    shuffle(song);
+
+    //Give the notes their current position
+    song.forEach((n, i) => n.givePosition(i));
+
+    //Give the notes their vision
+    song.forEach(n => n.giveVision(5));
+
+    /*song = [];
+
+    c = new Note('c4', 1/4);
+    c.giveRules([new Note('d4', 1/4)]);
+
+    d = new Note('d4', 1/4);
+    d.giveRules([new Note('e4', 1/4)/*, new Note('f4', 1/4), new Note('g4', 1/4)]);
+
+    e = new Note('e4', 1/4);
+    e.giveRules([new Note('f4', 1/4)/*, new Note('g4', 1/4), new Note('a4', 1/4)]);
+
+    f = new Note('f4', 1/4);
+    f.giveRules([new Note('g4', 1/4)/*, new Note('a4', 1/4), new Note('b4', 1/4)]);
+
+    g = new Note('g4', 1/4);
+    g.giveRules([new Note('a4', 1/4)/*, new Note('b4', 1/4), new Note('c4', 1/4)]);
+
+    a = new Note('a4', 1/4);
+    a.giveRules([new Note('b4', 1/4)/*, new Note('c4', 1/4), new Note('d4', 1/4)]);
+
+    b = new Note('b4', 1/4);
+    b.giveRules([new Note('c4', 1/4)/*, new Note('d4', 1/4), new Note('e4', 1/4)]);
+
+    song = [a,b,d,c,e,f,g];
+
+    //shuffle(song);
+
+
+
+    song.forEach((n, i) => {
+      n.givePosition(i);
+      n.giveVision(1);
+      console.log(n.note.name() + " " + n.position);
+    });
+
+    console.log("Start");*/
+
+    iterate(505, function(iteration) {
+      song.forEach(n => {
+        setFieldOfView(n);
+        n.move();
+      });
+      song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
+      console.log(numberOfMoves);
+      numberOfMoves = 0;
+    });
+
+
+
+
+    song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
+
+    console.log(song);
+
     //Load instrument as a soundfount
-    piano = soundFont.instrument('kalimba');
+    piano = soundFont.instrument('acoustic_grand_piano');
 
     //When instrument is ready
     piano.onready(() => {
 
       let start = 0;
       //Iterate through all notes
-      notes.forEach((note) => {
+      song.forEach((note) => {
         //Duration for current note
-        let duration = noteDuration(note.duration, 100);  //note measure, bpm
+        let duration = noteDuration(note.duration, 80);  //note measure, bpm
         //Play the note after a certain amount of time
         setTimeout(() => note.play(duration, start), start);
 
@@ -182,6 +332,46 @@ xhr.onreadystatechange = function() {
     });
 
   }
+}
+
+function iterate(numberOfTimes, cb) {
+  for(let i = 0; i < numberOfTimes; i++) {
+    cb(i);
+  }
+}
+
+function setFieldOfView(n) {
+  let vision = n.vision;
+  let pos = n.position;
+
+  //console.log("Vision: " + vision);
+  //console.log("Position: " + pos);
+
+  fieldOfView = song.filter(f => {
+    if(f.position >= (pos-vision) && f.position <= (pos+vision) && f.position !== pos) {
+      //console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
+      return true;
+    } else return false;
+  });
+
+  n.giveNotesInVision(fieldOfView);
+}
+
+function setNoteRules(probabilities, n) {
+  let objKey = (n.duration + "-" + n.note.name() + n.octave).replace(/\./g, 'q');
+  let ruleNotes = probabilities[objKey];
+  let keys = [];
+  for(let ruleKey in ruleNotes) {
+    if(ruleNotes.hasOwnProperty(ruleKey)) {
+      if(ruleKey !== '<ENDSTR>') {
+        keys.push({note: ruleKey.replace(/q/g, '.'), prob: ruleNotes[ruleKey]});
+      } 
+    }
+  }
+  keys.sort((n1, n2) => (n1.prob > n2.prob) ? -1 : 1);
+
+  keys = keys.map(n => new Note(n.note.match(/([a-g]\d)/g)[0], parseFloat(n.note.match(/(\d\.\d*)/g)[0])));
+  n.giveRules(keys);
 }
 
 function noteDuration(note, bpm) {
