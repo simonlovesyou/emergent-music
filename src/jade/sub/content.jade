@@ -8,3 +8,21 @@ block content
 	button(type="button" onclick="iteration();") Iterate
 
 	button(id="play" onclick="play();") Play
+
+	select(id="instrumentDrop")
+		option(value="bagpipe") Bagpipe
+		option(value="cello") Cello
+		option(value="electric_bass_finger") Electric Bass
+		option(value="electric_guitar_clean") Electric Guitar
+		option(value="harmonica") Harmonica
+		option(value="helicopter") Helicopter
+		option(value="kalimba") Kalimba
+		option(value="gunshot") Gunshot
+		option(value="oboe") Oboe
+		option(value="xylophone") Xylophone
+
+	button(id="choice" onclick="instrumental();") Select
+
+	form(oninput="amount.value=speedInput.value")
+		input(type="range" id="speedInput" name="speedInput" value ="500" min="0" max="1000")
+		output(name="amount" for="speedInput") 500

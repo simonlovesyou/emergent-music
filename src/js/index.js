@@ -11,6 +11,7 @@ const soundFont = new Soundfont(context);
 let piano;
 let song = [];
 let numberOfMoves = 0;
+let instrument = 'gunshot';
 
 
 /*Class note. A note contains a note, frequency, the duration of the note, chordwill and placement.*/
@@ -361,12 +362,9 @@ xhr.onreadystatechange = function() {
       console.log(n.note.name() + " " + n.position);
     });*/
 
-
     console.log(song);
 
-    song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
-
-    console.log(song.map(n => n.note.name() + n.position).join(' '));
+    //instrument = instrumental(); 
 
     //Load instrument as a soundfount
     piano = soundFont.instrument('acoustic_grand_piano');
@@ -378,6 +376,32 @@ xhr.onreadystatechange = function() {
     });
 
   }
+}
+
+/*Function to choose instrument from the dropdown list*/
+function instrumental(){
+  let selectID = document.getElementById("instrumentDrop");
+  let instrument = selectID.options[selectID.selectedIndex].value;
+  readyPiano(instrument);
+}
+
+
+/*Function to set up the piano*/
+function readyPiano(instrument){
+
+  console.log(instrument);
+  song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
+
+  console.log(song.map(n => n.note.name() + n.position).join(' '));
+
+  //Load instrument as a soundfount
+  piano = soundFont.instrument(instrument);
+  document.querySelector('#play').innerHTML = 'Loading...';
+  document.querySelector('#play').disabled = true;
+  piano.onready(() => {
+    document.querySelector('#play').innerHTML = 'Play';
+    document.querySelector('#play').disabled = false;
+  });
 }
 
 function iteration() {
@@ -409,12 +433,15 @@ let playing = false;
 
 function play() {
 
+  let speed = document.querySelector('#speedInput').value;
   let start = 0;
+
+  console.log(speed);
   //Iterate through all notes
   song.forEach((note) => {
 
     //Duration for current note
-    let duration = noteDuration(note.duration, 650);  //note measure, bpm
+    let duration = noteDuration(note.duration, speed);  //note measure, bpm
     //Play the note after a certain amount of time
     //console.log(note.duration + note.note.name());
 
