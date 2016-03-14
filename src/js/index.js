@@ -4,6 +4,8 @@ import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
 import MarkovChain from 'markovchain-generate'; 
 import shuffle from 'shuffle-array';
+import foswig from 'foswig';
+import markov from 'markov';
 const context = new AudioContext();
 const soundFont = new Soundfont(context);
 let piano;
@@ -20,6 +22,7 @@ class Note {
       this.freq = this.note.fq();
     }
     this.rules;
+    this.coupleRules;
     this.duration = duration; 
     this.chordwill = chordwill;  
     this.position = placement;
@@ -43,8 +46,12 @@ class Note {
     this.position = pos;
   }
 
-  giveRules(rules) {
-    this.rules = rules;
+  giveRules(rules, order) {
+    if(order === 1) {
+      this.rules = rules;
+    } else if(order === 2) {
+      this.coupleRules = rules;
+    }
   }
 
   move() {
@@ -56,27 +63,49 @@ class Note {
     //console.log("I, %s,  can see these notes:", this.note.name());
     //console.log(this.fieldOfView.map(n => n.note.name() + " " + n.position).join(' '));
 
-    this.rules.some(rule => {
-      return this.fieldOfView.some(note => {
+    let foundCouple = false;
+
+    if(this.coupleRules && this.coupleRules.length === 2) {
+      let rule = this.coupleRules;
+      foundCouple = this.fieldOfView.some((note, i, notes) => {
+        if(i < this.fieldOfView.length - 1 && i > 0) {
+          if(rule[0].note.name() === note.note.name() && rule[1].note.name() === notes[i+1].note.name() &&
+            rule[0].duration === note.duration && rule[1].duration === notes[i+1].duration) {
+            rule.forEach(n => console.log(n.note.name()));
+            console.log(note.note.name(), notes[i+1].note.name());
 
 
+            if((currentPos + 1) === note.position) {
+              newPosition = currentPos
+            } else if(note.position < currentPos) {
+              newPosition = note.position;
+            } else if(note.position > currentPos) {
+              //console.log("Hej :)");
+              newPosition = note.position-1;
+              //console.log("I want to position myself at " + (note.position-1));
+            }
+            return true;
+          }
+        } else {
+          return false;
+        }
+      });
+    }
+
+    if(!foundCouple) {
+      this.rules.some(rule => this.fieldOfView.some(note => {
         if(rule.note.name() === note.note.name() && rule.duration === note.duration) {
-          //console.log(this.note.name() +": " + note.note.name() + " is my favourite");
-          //console.log(note.note.name() +"s position is " +note.position);
           if((currentPos + 1) === note.position) {
             newPosition = currentPos
           } else if(note.position < currentPos) {
             newPosition = note.position;
           } else if(note.position > currentPos) {
-            //console.log("Hej :)");
             newPosition = note.position-1;
-            //console.log("I want to position myself at " + (note.position-1));
           }
-          
           return true;
         } else return false;
-      });
-    });
+      }));
+    }
 
 
     if(newPosition !== currentPos) {
@@ -255,12 +284,37 @@ xhr.onreadystatechange = function() {
 
     let chain = new MarkovChain(); 
     chain.generateChain(merged); 
+    console.log(markov);
+    let m = markov(2);
+    console.log(merged);
+    console.log(m);
+
+    m.seed(merged);
+
+    let coupleProb = m.db();
+
+    let tempProb = {};
+    for(var key in coupleProb) {
+      let formatedKey = key.match(/\dq\d*_.\d_(\dq\d*_.\d)/) ? key.match(/\dq\d*_.\d_(\dq\d*_.\d)/)[1] : '';
+      if(formatedKey) {
+        for(var notes in coupleProb[key].next) {
+          notes = notes.match(/\dq\d*_.\d/g).map(note => note.replace('_', '-'));
+          tempProb[formatedKey.replace('_', '-')] = notes
+        }
+      }
+    }
+
+    coupleProb = tempProb;
+
+    console.log(coupleProb);
 
     //Markov probabilites for all notes
     const probabilities = JSON.parse(chain.dump());
 
     //Give the rules for all notes
-    song.forEach(n => setNoteRules(probabilities, n));
+    song.forEach(n => setNoteRules(probabilities, n, 1));
+
+    song.forEach(n => setNoteRules(coupleProb, n, 2));
 
     song = song.filter(n => n.duration > 0);
 
@@ -315,7 +369,7 @@ xhr.onreadystatechange = function() {
     console.log(song.map(n => n.note.name() + n.position).join(' '));
 
     //Load instrument as a soundfount
-    piano = soundFont.instrument('gunshot');
+    piano = soundFont.instrument('acoustic_grand_piano');
     document.querySelector('#play').innerHTML = 'Loading...';
     document.querySelector('#play').disabled = true;
     piano.onready(() => {
@@ -397,21 +451,31 @@ function setFieldOfView(n) {
   n.giveNotesInVision(fieldOfView);
 }
 
-function setNoteRules(probabilities, n) {
+function setNoteRules(probabilities, n, order) {
   let objKey = (n.duration + "-" + n.note.name() + n.octave).replace(/\./g, 'q');
-  let ruleNotes = probabilities[objKey];
-  let keys = [];
-  for(let ruleKey in ruleNotes) {
-    if(ruleNotes.hasOwnProperty(ruleKey)) {
-      if(ruleKey !== '<ENDSTR>') {
-        keys.push({note: ruleKey.replace(/q/g, '.'), prob: ruleNotes[ruleKey]});
-      } 
+  if(order === 1) {
+    let ruleNotes = probabilities[objKey];
+    let keys = [];
+    for(let ruleKey in ruleNotes) {
+      if(ruleNotes.hasOwnProperty(ruleKey)) {
+        if(ruleKey !== '<ENDSTR>') {
+          keys.push({note: ruleKey.replace(/q/g, '.'), prob: ruleNotes[ruleKey]});
+        } 
+      }
     }
-  }
-  keys.sort((n1, n2) => (n1.prob > n2.prob) ? -1 : 1);
+    keys.sort((n1, n2) => (n1.prob > n2.prob) ? -1 : 1);
 
-  keys = keys.map(n => new Note(n.note.match(/([a-g]\d)/g)[0], parseFloat(n.note.match(/(\d\.\d*)/g)[0])));
-  n.giveRules(keys);
+    keys = keys.map(n => new Note(n.note.match(/([a-g]\d)/g)[0], parseFloat(n.note.match(/(\d\.\d*)/g)[0])));
+    n.giveRules(keys, 1);
+  } else if(order === 2 && probabilities[objKey]) {
+
+    let keys = probabilities[objKey].map(n => n.replace('q', '.'));
+    keys = keys.map(n => new Note(n.match(/([a-g]\d)/g)[0], parseFloat(n.match(/(\d\.\d*)/g)[0])));
+
+    n.giveRules(keys, 2);
+
+  }
+  
 }
 
 function noteDuration(note, bpm) {
