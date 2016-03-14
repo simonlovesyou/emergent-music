@@ -49,7 +49,8 @@ module.exports = grunt => {
                 'tocktimer', 
                 'markovchain-generate',
                 'shuffle-array',
-                'd3'
+                'd3',
+                'markov'
               ]
         },
         files: {
