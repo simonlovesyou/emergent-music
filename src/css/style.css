@@ -2,6 +2,14 @@ body {
   font: 10px sans-serif;
 }
 
+#NoOfIterations {
+	width: 190px;
+}
+
+#vision {
+	width:150px;
+}
+
 .axis path,
 .axis line {
   fill: none;
@@ -13,4 +21,40 @@ body {
   fill: none;
   stroke: steelblue;
   stroke-width: 1.5px;
+}
+
+/*Timeline*/
+.chart {
+	shape-rendering: crispEdges;
+}
+
+.mini text {
+	font: 9px sans-serif;	
+}
+
+.main text {
+	font: 12px sans-serif;	
+}
+
+.miniItem0 {
+	fill: darksalmon;
+	stroke-width: 6;	
+}
+
+.miniItem1 {
+	fill: darkolivegreen;
+	fill-opacity: .7;
+	stroke-width: 6;	
+}
+
+.miniItem2 {
+	fill: slategray;
+	fill-opacity: .7;
+	stroke-width: 6;	
+}
+
+.brush .extent {
+	stroke: gray;
+	fill: dodgerblue;
+	fill-opacity: .365;
 }
