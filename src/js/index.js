@@ -1,18 +1,19 @@
 import teoria from 'teoria';
-import np from 'noteplayer';
-import Tock from 'tocktimer';
 import Soundfont from 'soundfont-player';
 import MarkovChain from 'markovchain-generate'; 
-import shuffle from 'shuffle-array';
-import foswig from 'foswig';
 import markov from 'markov';
+import {JaroWinklerDistance} from 'natural';
+import {shuffle} from 'shuffle'
+import srand from 'random-seed';
+import {randomBytes} from 'crypto';
 const context = new AudioContext();
 const soundFont = new Soundfont(context);
-let piano;
 let song = [];
 let numberOfMoves = 0;
 let instrument = 'gunshot';
-
+let inputSongString = '';
+let songString = '';
+let lanes = [];
 
 /*Class note. A note contains a note, frequency, the duration of the note, chordwill and placement.*/
 class Note {
@@ -25,7 +26,6 @@ class Note {
     this.rules;
     this.coupleRules;
     this.duration = duration; 
-    this.chordwill = chordwill;  
     this.position = placement;
     this.fieldOfView = [];
     this.lastPosition = this.position;
@@ -60,20 +60,16 @@ class Note {
     this.lastPosition = currentPos;
 
     let newPosition = currentPos;
-
-    //console.log("I, %s,  can see these notes:", this.note.name());
-    //console.log(this.fieldOfView.map(n => n.note.name() + " " + n.position).join(' '));
-
     let foundCouple = false;
+    let doOrder2 = document.querySelector('#Order2').checked;
 
-    if(this.coupleRules && this.coupleRules.length === 2) {
+    if(doOrder2 && this.coupleRules && this.coupleRules.length === 2) {
       let rule = this.coupleRules;
       foundCouple = this.fieldOfView.some((note, i, notes) => {
         if(i < this.fieldOfView.length - 1 && i > 0) {
           if(rule[0].note.name() === note.note.name() && rule[1].note.name() === notes[i+1].note.name() &&
             rule[0].duration === note.duration && rule[1].duration === notes[i+1].duration) {
-            rule.forEach(n => console.log(n.note.name()));
-            console.log(note.note.name(), notes[i+1].note.name());
+            //console.log(note.note.name(), notes[i+1].note.name());
 
 
             if((currentPos + 1) === note.position) {
@@ -81,9 +77,7 @@ class Note {
             } else if(note.position < currentPos) {
               newPosition = note.position;
             } else if(note.position > currentPos) {
-              //console.log("Hej :)");
               newPosition = note.position-1;
-              //console.log("I want to position myself at " + (note.position-1));
             }
             return true;
           }
@@ -113,15 +107,12 @@ class Note {
       song.some(n => {
         //Push all notes backwards from the favourite notes position to this notes position
         if(n.position >= newPosition && n.position < currentPos) {
-          //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position+1, currentPos);
           n.givePosition(n.position+1);
           return true;
         }
 
         //Push all notes forward from the favourite notes position to this notes position
-        //console.log("%s %s %s", n.position, newPosition, currentPos);
         if(n.position <= newPosition && n.position > currentPos) {
-          //console.log("%s is giving %s new position from %s to %s", this.note.name(), n.note.name(), n.position, currentPos);
           n.givePosition(n.position-1);
           return true;
         }
@@ -129,17 +120,11 @@ class Note {
       });
     }
 
-    //console.log(currentPos, newPosition);
-    //console.log('\n');
-
     if(currentPos !== newPosition) {
       numberOfMoves++;
     }
 
     this.position = newPosition;
-
-
-
   }
 
   play(duration, start) {
@@ -208,30 +193,48 @@ class Section {
   }
 }
 
-//Visar hur vi annars skapar notes, bars och sections.
+var xhr2 = new XMLHttpRequest();
+xhr2.open("GET",'http://localhost:8080/assets/txt/instruments.txt');
+xhr2.send();
 
-/*const n = new Note('c4', 0.5); 
-const n3 = new Note('d4', 0.25);
-const n4 = new Note('b4', 0.25);
-const n5 = new Note('g4', 1);
+document.addEventListener('DOMContentLoaded', () => {
+  xhr2.onreadystatechange = function() {
+    if(xhr2.readyState === 4 && xhr2.status === 200) {
+      let data = xhr2.responseText;
+      let select = document.querySelector('#instrumentDrop');
+      data.split('\n').forEach(d => {
 
-const b = new Bar([n, n3, n4]);
-const b2 = new Bar([n5]);
-const b3 = new Bar([n4, n, n3]);
+        let option = document.createElement('option');
+        option.value = d;
+        let prettyText = d.replace(/\_/g, ' ');
+        option.text = prettyText.charAt(0).toUpperCase() + prettyText.slice(1);
+        console.log({element: select});
+        select.add(option, select.length);
+      });
+      let option = document.createElement('option');
+      option.value = 'acoustic_grand_piano';
+      option.text = 'Acoustic grand piano (default)';
+      select.add(option, 0);
+      select.selectedIndex = 0;
+    }
 
-const m1 = new Section([b, b2, b3]);
-const m2 = new Section([b2, b, b2]);
-*/
-//m1.play(120);
-//m2.play(120);
+  }
+});
 
 var xhr = new XMLHttpRequest();
-xhr.open("GET", 'http://localhost:8080/assets/txt/supermario.txt');
 
-xhr.send();
+function getSong() {
+
+  let songName = document.querySelector('#songSelect').value;
+  xhr.open("GET",'http://localhost:8080/assets/txt/' + songName + ".txt");
+
+  xhr.send();
+}
+
 xhr.onreadystatechange = function() {
   if(xhr.readyState === 4 && xhr.status === 200) {
 
+    document.querySelector('#iterate').disabled = false;
     var data = xhr.responseText;
 
     data = data.split('\n').map(d => d.split(' '));
@@ -268,27 +271,21 @@ xhr.onreadystatechange = function() {
     //Push all notes from all bars to notes array
     section.bars.forEach(bar => song.push(...bar.notes));
 
-    /*song.forEach((n) => {
-      console.log(n.duration);
-    });*/
-
-    console.log(song.length);
-
     song = song.filter(n => n.note);
 
+    setGraphLanes();
+
     //Merge all notes to sentences
-    let merged = song.filter(n => n.duration > 0)
+    inputSongString = song.filter(n => n.duration > 0)
                  .map(n => n.duration + "-" + n.note.name() + n.octave)
                  .join(' ');
 
-    merged = merged.replace(/\./g, 'q');
+
+    merged = inputSongString.replace(/\./g, 'q');
 
     let chain = new MarkovChain(); 
     chain.generateChain(merged); 
-    console.log(markov);
     let m = markov(2);
-    console.log(merged);
-    console.log(m);
 
     m.seed(merged);
 
@@ -299,160 +296,135 @@ xhr.onreadystatechange = function() {
       let formatedKey = key.match(/\dq\d*_.\d_(\dq\d*_.\d)/) ? key.match(/\dq\d*_.\d_(\dq\d*_.\d)/)[1] : '';
       if(formatedKey) {
         for(var notes in coupleProb[key].next) {
-          notes = notes.match(/\dq\d*_.\d/g).map(note => note.replace('_', '-'));
-          tempProb[formatedKey.replace('_', '-')] = notes
+          if(notes.match(/\dq\d*_.\d/g)) {
+            notes = notes.match(/\dq\d*_.\d/g).map(note => note.replace('_', '-'));
+            tempProb[formatedKey.replace('_', '-')] = notes
+          }
         }
       }
     }
 
     coupleProb = tempProb;
 
-    console.log(coupleProb);
-
     //Markov probabilites for all notes
     const probabilities = JSON.parse(chain.dump());
 
     //Give the rules for all notes
     song.forEach(n => setNoteRules(probabilities, n, 1));
-
     song.forEach(n => setNoteRules(coupleProb, n, 2));
 
     song = song.filter(n => n.duration > 0);
 
-    shuffle(song);
-
-    //Give the notes their current position
-    song.forEach((n, i) => n.givePosition(i));
-
-    //Give the notes their vision
-    song.forEach(n => n.giveVision(5));
-
-    /*song = [];
-
-    c = new Note('c4', 1/4);
-    c.giveRules([new Note('e4', 1/4)]);
-
-    d = new Note('d4', 1/4);
-    d.giveRules([new Note('f#4', 1/4)]);
-
-    e = new Note('e4', 1/4);
-    e.giveRules([new Note('f4', 1/4)]);
-
-    f = new Note('f4', 1/4);
-    f.giveRules([new Note('g4', 1/4)]);
-
-    g = new Note('g4', 1/4);
-    g.giveRules([new Note('a4', 1/4)]);
-
-    a = new Note('a4', 1/4);
-    a.giveRules([new Note('b4', 1/4)]);
-
-    b = new Note('b4', 1/4);
-    b.giveRules([new Note('c4', 1/4)]);
-
-    song = [a,b,c,d,e,f,g];
-
-    //shuffle(song);
-
-
-
-    song.forEach((n, i) => {
-      n.givePosition(i);
-      n.giveVision(2);
-      console.log(n.note.name() + " " + n.position);
-    });*/
-
-    console.log(song);
-
-    //instrument = instrumental(); 
-
-    //Load instrument as a soundfount
-    piano = soundFont.instrument('acoustic_grand_piano');
-    document.querySelector('#play').innerHTML = 'Loading...';
-    document.querySelector('#play').disabled = true;
-    piano.onready(() => {
-      document.querySelector('#play').innerHTML = 'Play';
-      document.querySelector('#play').disabled = false;
-    });
-
   }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  readyPiano();
+})
+
 /*Function to choose instrument from the dropdown list*/
-function instrumental(){
+function instrumental() {
   let selectID = document.getElementById("instrumentDrop");
   let instrument = selectID.options[selectID.selectedIndex].value;
   readyPiano(instrument);
 }
 
+function calculateDistance(input) {
+  songString = '';
+  if(input) {
+    songString = input.map(n => n.duration + "-" + n.note.name() + n.octave).join(' ');
+  }
+  return JaroWinklerDistance(songString, inputSongString);
+}
 
 /*Function to set up the piano*/
 function readyPiano(instrument){
 
-  console.log(instrument);
-  song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
-
-  console.log(song.map(n => n.note.name() + n.position).join(' '));
-
-  //Load instrument as a soundfount
-  piano = soundFont.instrument(instrument);
-  document.querySelector('#play').innerHTML = 'Loading...';
-  document.querySelector('#play').disabled = true;
-  piano.onready(() => {
-    document.querySelector('#play').innerHTML = 'Play';
-    document.querySelector('#play').disabled = false;
-  });
+  piano = soundFont.instrument(instrument || 'acoustic_grand_piano');
 }
 
 function iteration() {
 
+  song = shuffleSong();
+  //Give the notes their current position
   let iterations = document.querySelector('#NoOfIterations').value || 100;
+  setVision();
+  setPosition();
 
   let graphData = [];
+  let songDistance = [];
 
-  iterate(iterations, function(iteration) {
+  iterate(iterations, (iteration) => {
     song.forEach(n => {
       setFieldOfView(n);
       n.move();
     });
     song.sort((n1, n2) => (n1.position < n2.position) ? -1 : 1);
-    graphData.push({iteration, numberOfMoves});
-
+    graphData.push({iteration, data: numberOfMoves});
+    if(song) {
+      songDistance.push({iteration, data: parseFloat(calculateDistance(song))});
+    }
     numberOfMoves = 0;
   });
 
-  
+  document.querySelector('#play').disabled = false;
 
   console.log("Start");
+  calculateDistance();
 
-  window.graph(graphData);
+  window.graph('Number of moves', graphData);
+  window.graph('Song similarity', songDistance);
+  window.graphTimeline(lanes, getDuration(song));
 
 }
 
-let playing = false;
-
 function play() {
 
-  let speed = document.querySelector('#speedInput').value;
+  let bpm = document.querySelector('#speedInput').value;
   let start = 0;
 
-  console.log(speed);
   //Iterate through all notes
   song.forEach((note) => {
-
     //Duration for current note
-    let duration = noteDuration(note.duration, speed);  //note measure, bpm
+    let duration = noteDuration(note.duration, bpm);  //note measure, bpm
     //Play the note after a certain amount of time
     //console.log(note.duration + note.note.name());
 
     setTimeout(() => note.play(duration, start), start);
-    
-    
+
+    start += duration;
+  });
+}
+
+function shuffleSong() {
+  let seedElement = document.querySelector('#seed');
+  
+  if(!seedElement.value) {
+    seedElement.value = randomBytes(8).toString('hex');
+  }
+  let seed = seedElement.value;
+  let rand = srand.create(seed);
+
+  return shuffle({deck: song, random: () => { return rand.random(); }}).cards;
+
+}
+
+function getDuration(input) {
+  let speed = document.querySelector('#speedInput').value
+  let start = 0;
+  let data = [];
+
+  input.forEach((note) => {
+
+    //Duration for current note
+    let duration = noteDuration(note.duration, speed);
+
+    data.push({y: note.note.name() + note.octave, x0: start, x1: start+duration});
 
     start += duration;
 
   });
-
+  return data;
 }
 
 function iterate(numberOfTimes, cb) {
@@ -461,21 +433,26 @@ function iterate(numberOfTimes, cb) {
   }
 }
 
+function setVision() {
+  let v = parseInt(document.querySelector('#vision').value) || 2;
+  song.forEach(n => n.giveVision(v));
+}
+
 function setFieldOfView(n) {
   let vision = n.vision;
   let pos = n.position;
 
-  //console.log("Vision: " + vision);
-  //console.log("Position: " + pos);
-
   let fieldOfView = song.filter(f => {
     if(f.position >= (pos-vision) && f.position <= (pos+vision) && f.position !== pos) {
-      //console.log("f.position: %s, (pos-vision): %s, (pos+vision): %s", f.position, (pos-vision), (pos+vision));
       return true;
     } else return false;
   });
 
   n.giveNotesInVision(fieldOfView);
+}
+
+function setPosition() {
+  song.forEach((n, i) => n.givePosition(i));
 }
 
 function setNoteRules(probabilities, n, order) {
@@ -492,18 +469,58 @@ function setNoteRules(probabilities, n, order) {
     }
     keys.sort((n1, n2) => (n1.prob > n2.prob) ? -1 : 1);
 
-    keys = keys.map(n => new Note(n.note.match(/([a-g]\d)/g)[0], parseFloat(n.note.match(/(\d\.\d*)/g)[0])));
+    keys = keys.map(n => new Note(n.note.match(/([a-g]-?\d)/g)[0], parseFloat(n.note.match(/(\d\.\d*)/g)[0])));
     n.giveRules(keys, 1);
   } else if(order === 2 && probabilities[objKey]) {
 
     let keys = probabilities[objKey].map(n => n.replace('q', '.'));
-    keys = keys.map(n => new Note(n.match(/([a-g]\d)/g)[0], parseFloat(n.match(/(\d\.\d*)/g)[0])));
 
+    keys = keys.map(n => {
+      //console.log(n);
+      if(n.match(/([a-g]\d)/g)[0]) {
+
+        return new Note(n.match(/([a-g]\d)/g)[0], parseFloat(n.match(/(\d\.\d*)/g)[0]))
+      } else return;
+    });
+
+    keys = keys.filter(n => n);
     n.giveRules(keys, 2);
 
   }
-  
 }
+
+function setGraphLanes() {
+  song.forEach(n => {
+    let exists = lanes.some(lane => {
+      if(lane.toLowerCase() === n.note.name().toLowerCase() + n.octave) {
+        return true;
+      } else return false;
+    });
+    if(!exists) {
+      lanes.push(n.note.name() + n.octave);
+    }
+  });
+    
+  lanes.sort((l1, l2) => (parseInt(l1.match(/-?\d/)[0]) > parseInt(l2.match(/-?\d/)[0])) ? -1 : 1);
+
+  let laneTemp = [[]];
+
+  lanes.map(lane => {
+    for(let i = 0; i < laneTemp.length; i++) {
+      if(laneTemp[laneTemp.length-1].length === 0 || laneTemp[laneTemp.length-1][0].match(/\d/)[0] === lane.match(/\d/)[0]) {
+        laneTemp[laneTemp.length-1].push(lane);
+      } else {
+        laneTemp.push([]);
+      }
+    }
+  });
+
+  lanes = laneTemp.map(octave => {
+    return [...(new Set(octave))].sort((l1, l2) => l1.match(/./)[0] > l2.match(/./)[0]);
+  });
+
+  lanes = [].concat.apply([],lanes);
+} 
 
 function noteDuration(note, bpm) {
   return 240000/bpm*note; 
