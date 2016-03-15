@@ -31,13 +31,18 @@
     "tocktimer": "^1.0.7"
   },
   "dependencies": {
+    "crypto": "0.0.3",
     "d3": "^3.5.16",
     "markov": "0.0.7",
     "markovchain-generate": "^1.0.11",
     "midi-node": "^0.1.13",
+    "natural": "^0.4.0",
     "noteplayer": "^1.1.9",
+    "random-seed": "^0.3.0",
+    "shuffle": "^0.2.2",
     "shuffle-array": "^0.1.2",
     "soundfont-player": "^0.6.1",
+    "srand": "^1.1.5",
     "teoria": "^2.2.0"
   }
 }

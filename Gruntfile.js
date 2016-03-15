@@ -42,15 +42,19 @@ module.exports = grunt => {
     browserify: {
       bundle: {
         options: {
+          exclude: ['wordnet-db', 'lapack'],
           require: [
                 'teoria',
                 'noteplayer',
                 'soundfont-player',
                 'tocktimer', 
                 'markovchain-generate',
-                'shuffle-array',
                 'd3',
-                'markov'
+                'markov',
+                'natural',
+                'random-seed',
+                'shuffle',
+                'crypto'
               ]
         },
         files: {
