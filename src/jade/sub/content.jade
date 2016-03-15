@@ -4,25 +4,30 @@ extends ../layout.jade
 block content
 	h1 Play that sweet music.
 
-	input(type="text", id="NoOfIterations" name="NoOfIterations")
-	button(type="button" onclick="iteration();") Iterate
+	div
+		select(id="songSelect")
+			option(value="supermario") Super Mario
+			option(value="for_elise") Für Elise
+		button(id="chooseSong" onclick="getSong();") Download song
 
-	button(id="play" onclick="play();") Play
+	div 
+		input(type="number", id="vision" name="vision" placeholder="Note vision (default 2)")
+	div
+		input(type="number", id="NoOfIterations" name="NoOfIterations" placeholder="Number of iterations (default 100)")
+		input(type="checkbox" id="Order2" checked)
+		label(for="Order2") Markov Chain of Order 2
+	div
+		input(type="text" id="seed" placeholder="Seed")
+		button(id="iterate" type="button" onclick="iteration();" disabled) Iterate
 
-	select(id="instrumentDrop")
-		option(value="bagpipe") Bagpipe
-		option(value="cello") Cello
-		option(value="electric_bass_finger") Electric Bass
-		option(value="electric_guitar_clean") Electric Guitar
-		option(value="harmonica") Harmonica
-		option(value="helicopter") Helicopter
-		option(value="kalimba") Kalimba
-		option(value="gunshot") Gunshot
-		option(value="oboe") Oboe
-		option(value="xylophone") Xylophone
+	div
+		select(id="instrumentDrop" onchange="instrumental();")
+	div
+		form(oninput="amount.value=speedInput.value")
+			input(type="range" id="speedInput" name="speedInput" value ="500" min="0" max="1000")
+			output(name="amount" for="speedInput") 500
+			label(for="speedInput") Tempo (bpm)
+	
+	div
+		button(id="play" onclick="play();" disabled) Play
 
-	button(id="choice" onclick="instrumental();") Select
-
-	form(oninput="amount.value=speedInput.value")
-		input(type="range" id="speedInput" name="speedInput" value ="500" min="0" max="1000")
-		output(name="amount" for="speedInput") 500
